@@ -1,9 +1,16 @@
 import React, { useEffect } from "react";
-import { View, Text, Image, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TextInput,
+  TouchableOpacity,
+  ImageBackground,
+} from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { useNavigation } from "@react-navigation/native";
-import { NavigationContainer } from "@react-navigation/native";
+import { useFonts } from "expo-font";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,19 +28,28 @@ export function LoginScreen({}) {
 
   const navigation = useNavigation();
 
+  const [fontsLoaded] = useFonts({
+    MarckScript: require("../assets/fonts/MarckScript-Regular.ttf"),
+  });
+
   useEffect(() => {
-    if (response?.type === "success") {
+    if (response?.type === "success" && response.authentication) {
       setAccessToken(response.authentication.accessToken);
       accessToken && fetchUserInfo();
     }
   }, [response, accessToken]);
 
   async function fetchUserInfo() {
-    const response = await fetch("https://www.googleapis.com/userinfo/v2/me", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const userInfo = await response.json();
-    setUser(userInfo);
+    if (accessToken) {
+      const response = await fetch(
+        "https://www.googleapis.com/userinfo/v2/me",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      const userInfo = await response.json();
+      setUser(userInfo);
+    }
   }
 
   const ShowUserInfo = () => {
@@ -48,16 +64,33 @@ export function LoginScreen({}) {
   };
 
   const onSignInPressed = () => {
-    navigation.navigate("Menu");
+    navigation.navigate("Dashboard");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#615149" }}>
       <View style={{ flex: 0.55, alignItems: "center" }}>
-        <Image
-          style={{ marginTop: 7, width: 250, height: 250 }}
-          source={require("../assets/logo.jpg")}
-        />
+        <ImageBackground
+          style={{ width: "110%", height: "110%" }}
+          source={require("../assets/restaurant-banner.jpeg")}
+          resizeMode="cover"
+          imageStyle={{ opacity: 0.66 }}
+        >
+          {/* Text or other components to overlay on the image */}
+          <Text
+            style={{
+              fontSize: 60,
+              fontWeight: "bold",
+              color: "white",
+              textAlign: "center",
+              marginTop: "25%",
+              fontFamily: fontsLoaded ? "MarckScript" : "Arial", // Use the loaded font
+              fontStyle: "italic",
+            }}
+          >
+            Food Paradise
+          </Text>
+        </ImageBackground>
       </View>
 
       <View
@@ -74,7 +107,7 @@ export function LoginScreen({}) {
           <TextInput
             style={{
               padding: 4,
-              backgroundColor: "#f0f0f0",
+              backgroundColor: "#F6F1E9",
               color: "#333",
               borderRadius: 10,
               marginBottom: 3,
@@ -90,7 +123,7 @@ export function LoginScreen({}) {
           <TextInput
             style={{
               padding: 4,
-              backgroundColor: "#f0f0f0",
+              backgroundColor: "#F6F1E9",
               color: "#333",
               borderRadius: 10,
               marginBottom: 3,
@@ -114,9 +147,14 @@ export function LoginScreen({}) {
           <TouchableOpacity
             style={{
               padding: 10,
-              backgroundColor: "#00C9AB",
+              backgroundColor: "#ecd282",
               borderRadius: 20,
               marginTop: 10,
+              shadowColor: "black",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 2,
+              elevation: 3,
             }}
             onPress={onSignInPressed}
           >
@@ -157,7 +195,11 @@ export function LoginScreen({}) {
               }}
               disabled={!request}
               onPress={() => {
-                promptAsync();
+                promptAsync().then((result) => {
+                  if (result.type === "success") {
+                    onSignInPressed(); // Call the onSignInPressed function on successful sign-in
+                  }
+                });
               }}
             >
               <Image
